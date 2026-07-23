@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Kelas · GuruKelas{% endblock %}
+{% block subtitle %}Kelola daftar kelas Anda{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+
+  <section class="card p-6 lg:col-span-2">
+    <h2 class="text-lg font-bold text-gray-900 mb-4">Daftar Kelas</h2>
+
+    {% if kelas_list %}
+    <div class="divide-y divide-gray-100">
+      {% for k in kelas_list %}
+      <div class="flex items-center justify-between py-3.5">
+        <div>
+          <a href="{% url 'dashboard:kelas_detail' k.id %}" class="font-semibold text-gray-800 hover:text-brand-600">{{ k.nama }}</a>
+          <p class="text-sm text-gray-400">{{ k.jumlah_siswa }} siswa</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <a href="{% url 'dashboard:kelas_detail' k.id %}" class="text-sm font-medium text-brand-600 hover:underline">Kelola</a>
+          <!-- Trigger Modal Hapus -->
+          <button type="button"
+                  class="text-sm font-medium text-red-400 hover:text-red-600 transition-colors"
+                  onclick="bukaModalHapus('{{ k.id }}', '{{ k.nama|escapejs }}', {{ k.jumlah_siswa }})">
+            Hapus
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="py-8 text-center text-sm text-gray-400">Belum ada kelas. Tambahkan kelas pertama Anda di samping.</p>
+    {% endif %}
+  </section>
+
+  <section class="card p-6 h-fit">
+    <h2 class="text-lg font-bold text-gray-900 mb-4">Tambah Kelas</h2>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      <div>
+        <label class="mb-1.5 block text-sm font-medium text-gray-600">{{ form.nama.label }}</label>
+        {{ form.nama }}
+        {% if form.nama.errors %}<p class="mt-1 text-xs text-red-500">{{ form.nama.errors.0 }}</p>{% endif %}
+      </div>
+      <button type="submit" class="w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors">
+        Tambah Kelas
+      </button>
+    </form>
+  </section>
+
+</div>
+
+<!-- =================== MODAL KONFIRMASI HAPUS =================== -->
+<div id="modal-hapus"
+     style="display:none"
+     class="fixed inset-0 z-50 items-center justify-center bg-black/40 backdrop-blur-sm"
+     aria-modal="true" role="dialog">
+  <div class="relative mx-4 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+       id="modal-box">
+
+    <!-- Ikon Peringatan -->
+    <div class="flex h-14 w-14 items-center justify-center rounded-full bg-red-50 mx-auto mb-4">
+      <svg viewBox="0 0 24 24" fill="none" class="h-7 w-7 text-red-500">
+        <path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"
+              stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <h3 class="text-center text-lg font-bold text-gray-900 mb-1">Hapus Kelas?</h3>
+    <p class="text-center text-sm text-gray-500 mb-1">
+      Anda akan menghapus kelas <strong id="modal-nama-kelas" class="text-gray-800"></strong>.
+    </p>
+    <p id="modal-info-siswa" class="text-center text-sm text-red-500 mb-5 font-medium"></p>
+    <p class="text-center text-xs text-gray-400 mb-5">Tindakan ini tidak dapat dibatalkan.</p>
+
+    <div class="flex gap-3">
+      <button type="button"
+              onclick="tutupModalHapus()"
+              class="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+        Batal
+      </button>
+      <form id="form-hapus-kelas" method="post" action="" class="flex-1">
+        {% csrf_token %}
+        <button type="submit"
+                class="w-full rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white hover:bg-red-600 transition-colors">
+          Ya, Hapus
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function bukaModalHapus(kelasId, namaKelas, jumlahSiswa) {
+    const modal = document.getElementById('modal-hapus');
+    document.getElementById('modal-nama-kelas').textContent = namaKelas;
+    const infoEl = document.getElementById('modal-info-siswa');
+    if (jumlahSiswa > 0) {
+      infoEl.textContent = jumlahSiswa + ' data siswa juga akan ikut terhapus.';
+      infoEl.classList.remove('hidden');
+    } else {
+      infoEl.textContent = '';
+      infoEl.classList.add('hidden');
+    }
+    document.getElementById('form-hapus-kelas').action =
+      '/kelas/' + kelasId + '/hapus/';
+    modal.style.display = 'flex';
+    // Animasi masuk
+    requestAnimationFrame(() => {
+      document.getElementById('modal-box').classList.add('scale-100');
+    });
+  }
+
+  function tutupModalHapus() {
+    const modal = document.getElementById('modal-hapus');
+    modal.style.display = 'none';
+  }
+
+  // Tutup modal kalau klik backdrop
+  document.getElementById('modal-hapus').addEventListener('mousedown', function(e) {
+    if (e.target === this) tutupModalHapus();
+  });
+
+  // Tutup modal dengan Escape
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') tutupModalHapus();
+  });
+</script>
+
+{% endblock %}

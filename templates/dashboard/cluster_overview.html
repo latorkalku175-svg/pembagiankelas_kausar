@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+{% block title %}Cluster · GuruKelas{% endblock %}
+{% block subtitle %}Pengelompokan siswa K-Means – Cerdas / Pintar / Malas{% endblock %}
+
+{% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<div class="flex justify-end mb-4">
+  <a href="{% url 'dashboard:naik_kelas' %}"
+     class="inline-flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-100">
+    Naik Kelas &rarr;
+  </a>
+</div>
+
+{# ── KARTU RINGKASAN + TOMBOL RUN ── #}
+{% if kelas %}
+<section class="card p-6 mb-6">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+    <h2 class="text-lg font-bold text-gray-900">Cluster Siswa &ndash; {{ judul_kelas }}</h2>
+    <div class="flex flex-wrap items-center gap-2">
+      <a href="{% url 'dashboard:cluster_pdf_preview' %}" target="_blank" rel="noopener"
+         class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-card hover:bg-gray-50 transition">
+        <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4">
+          <path d="M2.05 12a9.94 9.94 0 0119.9 0 9.94 9.94 0 01-19.9 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        Preview PDF
+      </a>
+      <a href="{% url 'dashboard:cluster_pdf' %}"
+         class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-card hover:bg-gray-50 transition">
+        <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4">
+          <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Unduh PDF
+      </a>
+      <form method="post" action="{% url 'dashboard:cluster_jalankan' %}">
+        {% csrf_token %}
+        <button type="submit" class="rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-100">
+          Jalankan Ulang K-Means
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <a href="{% url 'dashboard:cluster_detail' 'cerdas' %}"
+       class="cluster-card border-green-100 bg-green-50/60 block hover:shadow-card transition-shadow">
+      <p class="text-sm font-semibold text-green-700">Cerdas</p>
+      <p class="text-4xl font-extrabold text-gray-900">{{ ringkasan.cerdas }}</p>
+      <p class="text-sm text-gray-400">siswa</p>
+    </a>
+    <a href="{% url 'dashboard:cluster_detail' 'pintar' %}"
+       class="cluster-card border-indigo-100 bg-indigo-50/60 block hover:shadow-card transition-shadow">
+      <p class="text-sm font-semibold text-indigo-700">Pintar</p>
+      <p class="text-4xl font-extrabold text-gray-900">{{ ringkasan.pintar }}</p>
+      <p class="text-sm text-gray-400">siswa</p>
+    </a>
+    <a href="{% url 'dashboard:cluster_detail' 'malas' %}"
+       class="cluster-card border-orange-100 bg-orange-50/60 block hover:shadow-card transition-shadow">
+      <p class="text-sm font-semibold text-orange-700">Malas</p>
+      <p class="text-4xl font-extrabold text-gray-900">{{ ringkasan.malas }}</p>
+      <p class="text-sm text-gray-400">siswa</p>
+    </a>
+  </div>
+
+  {% if ringkasan.belum %}
+  <p class="mt-4 text-sm text-amber-600">{{ ringkasan.belum }} siswa belum dikelompokkan. Jalankan K-Means untuk memperbarui.</p>
+  {% endif %}
+</section>
+
+{# ── VISUALISASI (sesuai notebook Cell 43, 44, 49) ── #}
+{% if scatter_data_json != "[]" %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-6">
+
+  {# SCATTER: Skor_Akademik vs Skor_Disiplin (Cell 43) #}
+  <section class="card p-6">
+    <h3 class="text-base font-bold text-gray-900 mb-1">Skor Akademik vs Skor Disiplin</h3>
+    <p class="text-xs text-gray-400 mb-4">Posisi tiap siswa di ruang clustering K-Means</p>
+    <canvas id="scatterChart" height="280"></canvas>
+  </section>
+
+  {# BAR: Distribusi Kategori (Cell 44) #}
+  <section class="card p-6">
+    <h3 class="text-base font-bold text-gray-900 mb-1">Distribusi Kategori</h3>
+    <p class="text-xs text-gray-400 mb-4">Jumlah siswa per kategori – {{ judul_kelas }}</p>
+    <canvas id="barKategori" height="280"></canvas>
+  </section>
+
+</div>
+
+{# PROFIL FITUR PER KATEGORI (Cell 44: box plot -> bar grouped) #}
+<section class="card p-6 mb-6">
+  <h3 class="text-base font-bold text-gray-900 mb-1">Rata-rata Fitur per Kategori</h3>
+  <p class="text-xs text-gray-400 mb-4">Nilai rata-rata Eksakta, Non-Eksakta, Rangking, Izin, Sakit, Alpa per kategori cluster</p>
+  <canvas id="barFitur" height="180"></canvas>
+</section>
+{% endif %}
+
+{% endif %} {# end if kelas #}
+
+{# ── CROSSTAB SEMUA KELAS (Cell 49) ── #}
+{% if semua_kelas_ringkasan %}
+<section class="card p-6 mb-6">
+  <h2 class="text-base font-bold text-gray-900 mb-4">Distribusi Kategori per Kelas (Crosstab)</h2>
+  <div class="overflow-x-auto mb-6">
+    <table class="w-full text-sm text-center">
+      <thead>
+        <tr class="border-b border-gray-100 text-gray-400">
+          <th class="py-2 pr-4 text-left font-medium">Kelas</th>
+          <th class="py-2 pr-4 font-medium text-green-600">Cerdas</th>
+          <th class="py-2 pr-4 font-medium text-indigo-600">Pintar</th>
+          <th class="py-2 pr-4 font-medium text-orange-600">Malas</th>
+          <th class="py-2 font-medium text-gray-500">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in semua_kelas_ringkasan %}
+        <tr class="border-b border-gray-50 hover:bg-gray-50/60">
+          <td class="py-2.5 pr-4 text-left font-semibold text-gray-800">
+            <a href="{% url 'dashboard:pilih_kelas' r.kelas.id %}?next={% url 'dashboard:cluster_overview' %}"
+               class="hover:text-brand-600">{{ r.kelas.nama }}</a>
+          </td>
+          <td class="py-2.5 pr-4 font-bold text-green-600">{{ r.cerdas }}</td>
+          <td class="py-2.5 pr-4 font-bold text-indigo-600">{{ r.pintar }}</td>
+          <td class="py-2.5 pr-4 font-bold text-orange-600">{{ r.malas }}</td>
+          <td class="py-2.5 text-gray-500">{{ r.jumlah }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Stacked bar crosstab (Cell 49/50) #}
+  <canvas id="stackedKelas" height="120"></canvas>
+</section>
+{% endif %}
+
+{% if not kelas %}
+<div class="card p-10 text-center text-sm text-gray-400">
+  Belum ada kelas. Upload data siswa (xlsx) dulu di halaman
+  <a href="{% url 'dashboard:upload_file' %}" class="text-brand-600 hover:underline font-medium">Upload File</a>.
+</div>
+{% endif %}
+
+<script>
+const WARNA = {
+  cerdas: { bg: 'rgba(34,197,94,0.7)',   border: '#16a34a' },
+  pintar: { bg: 'rgba(99,102,241,0.7)',  border: '#4338ca' },
+  malas:  { bg: 'rgba(249,115,22,0.7)',  border: '#c2410c' },
+  belum:  { bg: 'rgba(156,163,175,0.5)', border: '#9ca3af' },
+};
+
+// ── SCATTER ──────────────────────────────────────────────────────────────────
+const rawScatter = {{ scatter_data_json|safe }};
+if (rawScatter.length) {
+  const byLabel = {};
+  rawScatter.forEach(d => {
+    if (!byLabel[d.label]) byLabel[d.label] = [];
+    byLabel[d.label].push({ x: d.x, y: d.y, nama: d.nama });
+  });
+
+  const datasets = Object.entries(byLabel).map(([lbl, pts]) => ({
+    label: lbl.charAt(0).toUpperCase() + lbl.slice(1),
+    data: pts,
+    backgroundColor: (WARNA[lbl] || WARNA.belum).bg,
+    borderColor:     (WARNA[lbl] || WARNA.belum).border,
+    pointRadius: 5,
+    pointHoverRadius: 7,
+  }));
+
+  new Chart(document.getElementById('scatterChart'), {
+    type: 'scatter',
+    data: { datasets },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const p = ctx.raw;
+              return `${p.nama || ''} (${ctx.dataset.label}): [${p.x}, ${p.y}]`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { title: { display: true, text: 'Skor Akademik' } },
+        y: { title: { display: true, text: 'Skor Disiplin' } },
+      }
+    }
+  });
+
+  // ── BAR KATEGORI ──────────────────────────────────────────────────────────
+  const hitungLabel = { Cerdas: 0, Pintar: 0, Malas: 0 };
+  rawScatter.forEach(d => {
+    const k = d.label.charAt(0).toUpperCase() + d.label.slice(1);
+    if (hitungLabel[k] !== undefined) hitungLabel[k]++;
+  });
+  new Chart(document.getElementById('barKategori'), {
+    type: 'bar',
+    data: {
+      labels: ['Cerdas', 'Pintar', 'Malas'],
+      datasets: [{
+        label: 'Jumlah Siswa',
+        data: [hitungLabel.Cerdas, hitungLabel.Pintar, hitungLabel.Malas],
+        backgroundColor: [WARNA.cerdas.bg, WARNA.pintar.bg, WARNA.malas.bg],
+        borderColor:     [WARNA.cerdas.border, WARNA.pintar.border, WARNA.malas.border],
+        borderWidth: 1.5,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+}
+
+// ── BAR FITUR ────────────────────────────────────────────────────────────────
+const profilFitur = {{ profil_fitur_json|safe }};
+if (Object.keys(profilFitur).length) {
+  const fiturLabels = Object.keys(profilFitur);
+  const kategori = ['cerdas', 'pintar', 'malas'];
+  const datasets = kategori.map(k => ({
+    label: k.charAt(0).toUpperCase() + k.slice(1),
+    data: fiturLabels.map(f => profilFitur[f][k] ?? 0),
+    backgroundColor: WARNA[k].bg,
+    borderColor:     WARNA[k].border,
+    borderWidth: 1.5,
+    borderRadius: 4,
+  }));
+
+  new Chart(document.getElementById('barFitur'), {
+    type: 'bar',
+    data: { labels: fiturLabels, datasets },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top' } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+}
+
+// ── STACKED BAR CROSSTAB ─────────────────────────────────────────────────────
+const crosstab = [
+  {% for r in semua_kelas_ringkasan %}
+  { kelas: "{{ r.kelas.nama }}", cerdas: {{ r.cerdas }}, pintar: {{ r.pintar }}, malas: {{ r.malas }} },
+  {% endfor %}
+];
+if (crosstab.length) {
+  new Chart(document.getElementById('stackedKelas'), {
+    type: 'bar',
+    data: {
+      labels: crosstab.map(r => r.kelas),
+      datasets: [
+        { label: 'Cerdas', data: crosstab.map(r => r.cerdas), backgroundColor: WARNA.cerdas.bg, borderColor: WARNA.cerdas.border, borderWidth: 1, borderRadius: 3 },
+        { label: 'Pintar', data: crosstab.map(r => r.pintar), backgroundColor: WARNA.pintar.bg, borderColor: WARNA.pintar.border, borderWidth: 1 },
+        { label: 'Malas',  data: crosstab.map(r => r.malas),  backgroundColor: WARNA.malas.bg,  borderColor: WARNA.malas.border,  borderWidth: 1 },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'top' } },
+      scales: {
+        x: { stacked: true },
+        y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

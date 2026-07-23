@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Upload File · GuruKelas{% endblock %}
+{% block subtitle %}Upload data siswa (xlsx) atau tambah siswa manual{% endblock %}
+
+{% block content %}
+
+<section class="card p-6 mb-6">
+  <h2 class="text-lg font-bold text-gray-900 mb-1">Latih K-Means dari Data Excel</h2>
+  <p class="mb-4 text-sm text-gray-400">
+    Upload file leger Excel siswa &mdash; boleh pilih banyak file sekaligus, <strong>1 file = 1 kelas</strong>
+    (mis. <code>Kelas 1 A.xlsx</code>, <code>Kelas 1 B.xlsx</code>, <code>Kelas 2 A.xlsx</code>, ...).
+    Nama kelas dideteksi otomatis dari nama filenya. Sistem akan merapikan strukturnya, melatih K-Means
+    untuk seluruh siswa yang diupload sekaligus, lalu hasilnya (Cerdas/Pintar/Malas) otomatis
+    dipisah kembali ke kelas asalnya masing-masing.
+  </p>
+  <form method="post" action="{% url 'dashboard:upload_data_siswa' %}" enctype="multipart/form-data" class="flex flex-col gap-3">
+    {% csrf_token %}
+    {% if upload_form.guru_tujuan %}
+    <div class="rounded-xl border border-amber-100 bg-amber-50/60 p-3">
+      <label class="mb-1.5 block text-sm font-medium text-gray-600">{{ upload_form.guru_tujuan.label }}</label>
+      {{ upload_form.guru_tujuan }}
+      <p class="mt-1 text-xs text-gray-400">{{ upload_form.guru_tujuan.help_text }}</p>
+      {% if upload_form.guru_tujuan.errors %}<p class="mt-1 text-xs text-red-500">{{ upload_form.guru_tujuan.errors.0 }}</p>{% endif %}
+    </div>
+    {% endif %}
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+      <div class="flex-1">
+        <label class="mb-1.5 block text-sm font-medium text-gray-600">{{ upload_form.files.label }}</label>
+        {{ upload_form.files }}
+        {% if upload_form.files.errors %}<p class="mt-1 text-xs text-red-500">{{ upload_form.files.errors.0 }}</p>{% endif %}
+      </div>
+      <button type="submit" class="shrink-0 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors">
+        Latih &amp; Cluster
+      </button>
+    </div>
+  </form>
+</section>
+
+{% if riwayat_upload %}
+<section class="card p-6 mb-6">
+  <h2 class="text-lg font-bold text-gray-900 mb-1">Riwayat Upload</h2>
+  <p class="mb-4 text-sm text-gray-400">
+    {% if kelas.guru == request.user and not request.user.is_superuser %}
+      Catatan siapa saja yang sudah upload data Excel untuk {{ kelas.nama }}.
+    {% else %}
+      Catatan semua upload data Excel dari seluruh kelas &amp; guru.
+    {% endif %}
+  </p>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-100 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+          <th class="py-2 pr-4">File</th>
+          <th class="py-2 pr-4">Kelas</th>
+          <th class="py-2 pr-4">Diupload Oleh</th>
+          <th class="py-2 pr-4">Jumlah Siswa</th>
+          <th class="py-2">Waktu</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in riwayat_upload %}
+        <tr class="border-b border-gray-50">
+          <td class="py-2 pr-4 text-gray-700">{{ r.nama_file }}</td>
+          <td class="py-2 pr-4 text-gray-700">{{ r.kelas.nama }}</td>
+          <td class="py-2 pr-4 text-gray-700">
+            {{ r.diupload_oleh.first_name|default:r.diupload_oleh.username|default:"–" }}
+            {% if r.diupload_oleh.is_superuser %}<span class="ml-1 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-600">Superuser</span>{% endif %}
+          </td>
+          <td class="py-2 pr-4 text-gray-700">{{ r.jumlah_siswa }}</td>
+          <td class="py-2 text-gray-400">{{ r.diupload_pada|date:"d M Y, H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% if not kelas %}
+  <div class="card p-10 text-center text-sm text-gray-400">Buat kelas terlebih dahulu untuk menambah siswa secara manual.</div>
+{% else %}
+<section class="card p-6">
+  <h2 class="text-lg font-bold text-gray-900 mb-1">Tambah Siswa Manual &ndash; {{ kelas.nama }}</h2>
+  <p class="mb-4 text-sm text-gray-400">
+    Kalau upload file Excel leger di atas tidak berhasil (format file tidak dikenali, dsb), siswa bisa
+    ditambahkan satu per satu di sini. Fitur yang diisi sama persis dengan yang dipakai K-Means
+    (Eksakta, Non-Eksakta, Izin, Sakit, Alpa), jadi clustering Cerdas/Pintar/Malas langsung dijalankan
+    ulang untuk {{ kelas.nama }} begitu siswa baru disimpan.
+  </p>
+  <form method="post" action="{% url 'dashboard:tambah_siswa_manual' %}" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    {% csrf_token %}
+    {% for field in siswa_form %}
+    <div>
+      <label class="mb-1.5 block text-sm font-medium text-gray-600">{{ field.label }}</label>
+      {{ field }}
+      {% if field.errors %}<p class="mt-1 text-xs text-red-500">{{ field.errors.0 }}</p>{% endif %}
+    </div>
+    {% endfor %}
+    <div class="sm:col-span-2">
+      <button type="submit" class="w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors">
+        Tambah Siswa &amp; Jalankan Ulang Clustering
+      </button>
+    </div>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

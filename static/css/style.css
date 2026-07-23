@@ -1,0 +1,62 @@
+body {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.7rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6B7280;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.nav-item:hover {
+  background-color: #F9FAFB;
+  color: #374151;
+}
+
+.nav-item-active {
+  background-color: #F1F0FE;
+  color: #5B4BD6;
+}
+
+.nav-item-active:hover {
+  background-color: #F1F0FE;
+  color: #5B4BD6;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #F1F2F4;
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.04);
+}
+
+.cluster-card {
+  border-radius: 1rem;
+  padding: 1.5rem;
+  border: 1px solid;
+}
+
+.stat-icon {
+  display: grid;
+  place-items: center;
+  height: 2.75rem;
+  width: 2.75rem;
+  border-radius: 0.85rem;
+}
+
+input[type="text"], input[type="email"], input[type="password"], input[type="number"], select, textarea {
+  background-color: #ffffff;
+}
+
+details > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}

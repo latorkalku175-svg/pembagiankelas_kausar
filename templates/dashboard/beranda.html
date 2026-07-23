@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Beranda · GuruKelas{% endblock %}
+{% block subtitle %}Kelola kelas jadi lebih mudah{% endblock %}
+
+{% block content %}
+{% if not kelas %}
+  <div class="card flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+    <p class="text-lg font-semibold text-gray-700">Anda belum punya kelas</p>
+    <p class="max-w-sm text-sm text-gray-400">Buat kelas pertama Anda untuk mulai mengelola siswa dan melihat hasil clustering.</p>
+    <a href="{% url 'dashboard:kelas_list' %}" class="mt-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">Buat Kelas</a>
+  </div>
+{% else %}
+
+  <!-- Cluster Card -->
+  <section class="card p-6">
+    <h2 class="text-lg font-bold text-gray-900">Cluster Siswa &ndash; {{ kelas.nama }}</h2>
+    <p class="mb-5 text-sm text-gray-400">Siswa dikelompokkan otomatis menggunakan K-Means</p>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+
+      <div class="cluster-card border-green-100 bg-green-50/60">
+        <div class="stat-icon bg-white text-green-500 ring-1 ring-green-100">
+          <svg viewBox="0 0 24 24" fill="none" class="h-6 w-6"><path d="M9.5 4.2a2.6 2.6 0 0 0-3.8 2 2.6 2.6 0 0 0-1.5 4.3 2.7 2.7 0 0 0 1 4 2.6 2.6 0 0 0 2.6 3.6 2.6 2.6 0 0 0 4.7.9V4.7a2.6 2.6 0 0 0-3-0.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M14.5 4.2a2.6 2.6 0 0 1 3.8 2 2.6 2.6 0 0 1 1.5 4.3 2.7 2.7 0 0 1-1 4 2.6 2.6 0 0 1-2.6 3.6 2.6 2.6 0 0 1-4.7.9V4.7a2.6 2.6 0 0 1 3-0.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        </div>
+        <p class="mt-4 text-sm font-semibold text-green-700">Cerdas</p>
+        <p class="text-3xl font-extrabold text-gray-900">{{ cluster_counts.cerdas }}</p>
+        <p class="text-sm text-gray-400">siswa</p>
+        <a href="{% url 'dashboard:cluster_detail' 'cerdas' %}" class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-green-600 hover:gap-1.5 transition-all">
+          Lihat Detail
+          <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+
+      <div class="cluster-card border-indigo-100 bg-indigo-50/60">
+        <div class="stat-icon bg-white text-indigo-500 ring-1 ring-indigo-100">
+          <svg viewBox="0 0 24 24" fill="none" class="h-6 w-6"><path d="M12 3.5l2.4 5.1 5.6.6-4.2 3.8 1.2 5.5-4.9-2.9-4.9 2.9 1.2-5.5-4.2-3.8 5.6-.6L12 3.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        </div>
+        <p class="mt-4 text-sm font-semibold text-indigo-700">Pintar</p>
+        <p class="text-3xl font-extrabold text-gray-900">{{ cluster_counts.pintar }}</p>
+        <p class="text-sm text-gray-400">siswa</p>
+        <a href="{% url 'dashboard:cluster_detail' 'pintar' %}" class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:gap-1.5 transition-all">
+          Lihat Detail
+          <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+
+      <div class="cluster-card border-orange-100 bg-orange-50/60">
+        <div class="stat-icon bg-white text-orange-500 ring-1 ring-orange-100">
+          <svg viewBox="0 0 24 24" fill="none" class="h-6 w-6"><circle cx="12" cy="12" r="7.5" stroke="currentColor" stroke-width="1.5"/><path d="M9.3 11.2h1.9M13 11.2h1.9M9.5 15c.8.6 1.6.9 2.5.9s1.7-.3 2.5-.9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M17.5 5.3l1.6-1.1M19.5 7.6l1.8-.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+        </div>
+        <p class="mt-4 text-sm font-semibold text-orange-700">Malas</p>
+        <p class="text-3xl font-extrabold text-gray-900">{{ cluster_counts.malas }}</p>
+        <p class="text-sm text-gray-400">siswa</p>
+        <a href="{% url 'dashboard:cluster_detail' 'malas' %}" class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-orange-600 hover:gap-1.5 transition-all">
+          Lihat Detail
+          <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Fitur Cepat -->
+  <section class="mt-7">
+    <h2 class="mb-3 text-lg font-bold text-gray-900">Fitur Cepat</h2>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+      <a href="{% url 'dashboard:upload_file' %}" class="card flex items-center justify-between gap-4 p-5 hover:border-brand-200 transition-colors">
+        <div class="flex items-center gap-4">
+          <div class="stat-icon bg-blue-50 text-blue-500">
+            <svg viewBox="0 0 24 24" fill="none" class="h-6 w-6"><path d="M7.5 17.5a4 4 0 0 1-.7-7.94 5.5 5.5 0 0 1 10.6-2.07A4.5 4.5 0 0 1 17 17.5h-1.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 20v-7.5M9.3 14.8 12 12l2.7 2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <p class="font-semibold text-gray-900">Upload File</p>
+            <p class="text-sm text-gray-400">Bagikan materi ke siswa</p>
+          </div>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5 text-gray-300"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+
+      <a href="{% url 'dashboard:math_perbangku' %}" class="card flex items-center justify-between gap-4 p-5 hover:border-brand-200 transition-colors">
+        <div class="flex items-center gap-4">
+          <div class="stat-icon bg-blue-50 text-blue-500">
+            <svg viewBox="0 0 24 24" fill="none" class="h-6 w-6"><path d="M4 15.5h2l2.5 4.5L13 5h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div>
+            <p class="font-semibold text-gray-900">Math Perbangku</p>
+            <p class="text-sm text-gray-400">Lihat pemahaman siswa per meja</p>
+          </div>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5 text-gray-300"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+
+    </div>
+  </section>
+
+{% endif %}
+{% endblock %}

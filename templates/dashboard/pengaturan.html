@@ -1,0 +1,502 @@
+{% extends "base.html" %}
+{% block title %}Pengaturan · GuruKelas{% endblock %}
+{% block subtitle %}Kelola profil dan akun Anda{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+  <!-- ======= PROFIL GURU ======= -->
+  <section class="card p-6">
+    <h2 class="text-lg font-bold text-gray-900 mb-5">Profil Guru</h2>
+
+    <!-- Avatar Upload Area -->
+    <div class="flex flex-col items-center gap-4 mb-6 pb-6 border-b border-gray-100">
+      <!-- Preview Avatar -->
+      <div class="relative group cursor-pointer" onclick="document.getElementById('modal-avatar').classList.remove('hidden')">
+        {% if request.user.profil.foto %}
+          <img id="avatar-preview"
+               src="{{ request.user.profil.foto.url }}"
+               alt="Foto Profil"
+               class="h-24 w-24 rounded-full object-cover ring-4 ring-brand-100 shadow-md group-hover:ring-brand-400 transition">
+        {% else %}
+          <div id="avatar-preview-default"
+               class="h-24 w-24 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center ring-4 ring-brand-100 shadow-md group-hover:ring-brand-400 transition">
+            <span class="text-white font-bold text-3xl">{{ request.user.first_name|default:request.user.username|first|upper }}</span>
+          </div>
+          <img id="avatar-preview" src="" alt="Foto Profil"
+               class="h-24 w-24 rounded-full object-cover ring-4 ring-brand-100 shadow-md hidden">
+        {% endif %}
+        <!-- Overlay edit -->
+        <div class="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+          <svg viewBox="0 0 24 24" fill="none" class="h-6 w-6 text-white">
+            <path d="M15.5 3.5l5 5L7 22H2v-5L15.5 3.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="text-center">
+        <p class="text-sm font-semibold text-gray-800">
+          {{ request.user.profil.sapaan|default:"Bu" }} {{ request.user.first_name|default:request.user.username }}{% if request.user.profil.gelar %}, {{ request.user.profil.gelar }}{% endif %}
+        </p>
+        {% if request.user.profil.sekolah or request.user.profil.wali_kelas %}
+        <p class="text-xs text-gray-400">
+          {% if request.user.profil.sekolah %}{{ request.user.profil.sekolah }}{% endif %}{% if request.user.profil.wali_kelas %} · Wali Kelas {{ request.user.profil.wali_kelas }}{% endif %}
+        </p>
+        {% endif %}
+        <button type="button"
+                onclick="document.getElementById('modal-avatar').classList.remove('hidden')"
+                class="mt-1 text-xs text-brand-500 hover:text-brand-700 font-medium transition-colors">
+          Ubah foto profil
+        </button>
+      </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-4">
+      {% csrf_token %}
+      {% for field in profil_form %}
+        {% if field.name != 'foto' %}
+        <div class="{% if field.field.widget.input_type == 'checkbox' %}flex items-center gap-2{% endif %}">
+          {% if field.field.widget.input_type == 'checkbox' %}
+            {{ field }}
+            <label class="text-sm font-medium text-gray-600">{{ field.label }}</label>
+          {% else %}
+            <label class="mb-1.5 block text-sm font-medium text-gray-600">{{ field.label }}</label>
+            {{ field }}
+          {% endif %}
+          {% if field.errors %}<p class="mt-1 text-xs text-red-500">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+        {% endif %}
+      {% endfor %}
+      <button type="submit" name="simpan_profil"
+              class="w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors">
+        Simpan Profil
+      </button>
+    </form>
+  </section>
+
+  <!-- ======= UBAH PASSWORD ======= -->
+  <section class="card p-6">
+    <h2 class="text-lg font-bold text-gray-900 mb-4">Ubah Password</h2>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      {% for field in password_form %}
+      <div>
+        <label class="mb-1.5 block text-sm font-medium text-gray-600">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<p class="mt-1 text-xs text-red-500">{{ field.errors.0 }}</p>{% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" name="ganti_password"
+              class="w-full rounded-xl bg-gray-800 py-2.5 text-sm font-semibold text-white hover:bg-gray-900 transition-colors">
+        Ubah Password
+      </button>
+    </form>
+  </section>
+
+  <!-- ======= AKUN & APLIKASI ======= -->
+  <section class="card p-6 lg:col-span-2">
+    <h2 class="text-lg font-bold text-gray-900 mb-5">Akun &amp; Aplikasi</h2>
+
+    <div class="space-y-3">
+
+      <!-- Download Aplikasi -->
+      <div class="rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-3">
+        <div class="flex items-center gap-3">
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
+            <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5"><path d="M12 3v12m0 0-4-4m4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <div>
+            <p class="text-sm font-semibold text-gray-800">Download Aplikasi GuruKelas</p>
+            <p class="text-xs text-gray-400">Akses lebih cepat lewat aplikasi mobile</p>
+          </div>
+        </div>
+
+        <!-- Sudah terpasang -->
+        <div id="pwa-installed-msg" style="display:none"
+             class="flex items-center justify-center gap-2 rounded-xl bg-green-50 border border-green-200 px-4 py-2.5 text-sm font-semibold text-green-700">
+          <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="m8.5 12 2.5 2.5 4.5-4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Aplikasi sudah terpasang di HP Anda
+        </div>
+
+        <!-- Tombol PWA install (selalu tampil, kecuali sudah installed) -->
+        <button id="pwa-install-btn" type="button" onclick="installPWA()"
+                class="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 transition-colors">
+          <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4"><path d="M12 3v12m0 0-4-4m4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Pasang Aplikasi di HP
+        </button>
+
+        <!-- Panduan iOS -->
+        <p id="pwa-manual-hint" style="display:none"
+           class="text-xs text-gray-400 text-center">
+          Di iPhone: buka di Safari → ketuk ikon <span class="font-semibold">Bagikan</span> → pilih <span class="font-semibold">"Tambahkan ke Layar Utama"</span>
+        </p>
+
+        <!-- Toko aplikasi -->
+        <div class="flex gap-2">
+          <a href="https://play.google.com/store/apps/details?id=com.gurukelas.app"
+             target="_blank" rel="noopener"
+             class="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-xs font-semibold text-white hover:bg-gray-800 transition-colors">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M3.18 23.76a2 2 0 0 1-.68-1.56V1.8A2 2 0 0 1 3.18.24l.1-.06 12.37 11.88-12.37 11.76-.1-.06ZM17.46 8.94l2.6 2.5-2.6 2.5L14.9 12l2.56-3.06ZM4.34.06l10.56 10.15L8.28 16.3 4.34.06ZM4.34 23.94l3.94-16.24 6.62 6.09L4.34 23.94Z"/></svg>
+            Play Store
+          </a>
+          <a href="https://apps.apple.com/app/gurukelas/id0000000000"
+             target="_blank" rel="noopener"
+             class="flex-1 flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11Z"/></svg>
+            App Store
+          </a>
+        </div>
+      </div>
+
+      <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const btn = document.getElementById('pwa-install-btn');
+          const hint = document.getElementById('pwa-manual-hint');
+          const installedMsg = document.getElementById('pwa-installed-msg');
+
+          // Kalau sudah terpasang sebagai PWA
+          if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+            if (btn) btn.style.display = 'none';
+            if (installedMsg) installedMsg.style.display = 'flex';
+            return;
+          }
+
+          // iOS: tidak support beforeinstallprompt, tampilkan panduan manual
+          const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+          if (isIOS) {
+            // Ubah teks tombol jadi panduan
+            if (btn) btn.style.display = 'none';
+            if (hint) hint.style.display = 'block';
+            return;
+          }
+
+          // Kalau prompt sudah ditangkap sebelumnya (dari base.html)
+          if (window._pwaInstallPrompt) {
+            // tombol sudah tampil by default, tidak perlu apa-apa
+          }
+
+          // Dengarkan prompt kalau belum terpicu
+          window.addEventListener('beforeinstallprompt', () => {
+            if (btn) btn.style.display = 'flex';
+          });
+        });
+      </script>
+
+      <!-- Logout -->
+      <form method="post" action="{% url 'dashboard:logout' %}">
+        {% csrf_token %}
+        <button type="submit"
+                class="flex w-full items-center justify-between gap-3 rounded-xl border border-gray-100 p-4 text-left hover:bg-gray-50 transition-colors">
+          <span class="flex items-center gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-500">
+              <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5"><path d="M9 4.5H6a1.5 1.5 0 0 0-1.5 1.5v12A1.5 1.5 0 0 0 6 19.5h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 16.5 19 12l-4.5-4.5M19 12H9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="text-sm font-semibold text-gray-800">Keluar</span>
+          </span>
+          <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4 text-gray-300"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </form>
+
+      <!-- Hapus Akun -->
+      <button type="button"
+              onclick="document.getElementById('modal-hapus-akun').classList.remove('hidden')"
+              class="flex w-full items-center justify-between gap-3 rounded-xl border border-red-100 p-4 text-left hover:bg-red-50 transition-colors">
+        <span class="flex items-center gap-3">
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500">
+            <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5"><path d="M4 7h16M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2m2 0-.8 12a2 2 0 0 1-2 1.9H8.8a2 2 0 0 1-2-1.9L6 7h12Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span class="text-sm font-semibold text-red-600">Hapus Akun</span>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4 text-red-300"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+
+    </div>
+  </section>
+
+</div>
+
+<!-- =================== MODAL HAPUS AKUN =================== -->
+<div id="modal-hapus-akun"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm"
+     onclick="if(event.target===this) this.classList.add('hidden')">
+  <div class="relative mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+    <button onclick="document.getElementById('modal-hapus-akun').classList.add('hidden')"
+            class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1">
+      <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+
+    <div class="flex justify-center mb-4">
+      <span class="flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-red-500">
+        <svg viewBox="0 0 24 24" fill="none" class="h-7 w-7"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </span>
+    </div>
+
+    <h3 class="text-lg font-bold text-gray-900 mb-1 text-center">Hapus Akun Permanen</h3>
+    <p class="text-sm text-gray-500 text-center mb-5">
+      Semua data Anda (kelas, siswa, materi, dan profil) akan dihapus permanen dan tidak dapat dikembalikan. Masukkan password untuk konfirmasi.
+    </p>
+
+    <form method="post" action="{% url 'dashboard:hapus_akun' %}" class="space-y-3">
+      {% csrf_token %}
+      <input type="password" name="password" required placeholder="Masukkan password Anda"
+             class="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:border-red-400 focus:outline-none">
+      <button type="submit"
+              class="w-full rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition-colors">
+        Ya, Hapus Akun Saya
+      </button>
+      <button type="button"
+              onclick="document.getElementById('modal-hapus-akun').classList.add('hidden')"
+              class="w-full rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+        Batal
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  const modalHapusAkun = document.getElementById('modal-hapus-akun');
+  const observerHapusAkun = new MutationObserver(() => {
+    modalHapusAkun.style.display = modalHapusAkun.classList.contains('hidden') ? '' : 'flex';
+  });
+  observerHapusAkun.observe(modalHapusAkun, { attributes: true, attributeFilter: ['class'] });
+</script>
+
+<!-- =================== MODAL UPLOAD AVATAR =================== -->
+<div id="modal-avatar"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm"
+     onclick="if(event.target===this) this.classList.add('hidden')">
+  <div class="relative mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+    <button onclick="document.getElementById('modal-avatar').classList.add('hidden')"
+            class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1">
+      <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+
+    <h3 class="text-lg font-bold text-gray-900 mb-4 text-center">Ubah Foto Profil</h3>
+
+    <!-- Preview dalam modal -->
+    <div class="flex justify-center mb-5">
+      <div class="relative">
+        {% if request.user.profil.foto %}
+          <img id="modal-img-preview" src="{{ request.user.profil.foto.url }}"
+               class="h-20 w-20 rounded-full object-cover ring-4 ring-brand-100">
+        {% else %}
+          <img id="modal-img-preview" src=""
+               class="h-20 w-20 rounded-full object-cover ring-4 ring-brand-100 hidden">
+          <div id="modal-default-avatar"
+               class="h-20 w-20 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center ring-4 ring-brand-100">
+            <span class="text-white font-bold text-2xl">{{ request.user.first_name|default:request.user.username|first|upper }}</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Video untuk kamera -->
+    <video id="kamera-video" class="hidden w-full rounded-xl mb-3 max-h-48 object-cover bg-black" autoplay playsinline style="transform:scaleX(-1)"></video>
+    <canvas id="kamera-canvas" class="hidden"></canvas>
+
+    <div id="pilihan-sumber" class="grid grid-cols-2 gap-3 mb-4">
+      <!-- Upload File -->
+      <label class="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gray-200 p-4 cursor-pointer hover:border-brand-400 hover:bg-brand-50 transition-colors group">
+        <svg viewBox="0 0 24 24" fill="none" class="h-7 w-7 text-gray-400 group-hover:text-brand-500 transition-colors">
+          <path d="M7.5 18.5a4 4 0 0 1-.7-7.94 5.5 5.5 0 0 1 10.6-2.07A4.5 4.5 0 0 1 17 18.5h-1.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 21v-7.5M9.3 15.8 12 13l2.7 2.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="text-xs font-medium text-gray-600 group-hover:text-brand-600 transition-colors text-center">Pilih dari<br>Galeri / File</span>
+        <input id="input-foto-file" type="file" accept="image/*" class="hidden" onchange="pratinjauFile(this)">
+      </label>
+
+      <!-- Kamera -->
+      <button type="button"
+              onclick="bukaKamera()"
+              class="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gray-200 p-4 cursor-pointer hover:border-brand-400 hover:bg-brand-50 transition-colors group">
+        <svg viewBox="0 0 24 24" fill="none" class="h-7 w-7 text-gray-400 group-hover:text-brand-500 transition-colors">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+          <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="1.7"/>
+        </svg>
+        <span class="text-xs font-medium text-gray-600 group-hover:text-brand-600 transition-colors text-center">Ambil Foto<br>dari Kamera</span>
+      </button>
+    </div>
+
+    <!-- Kontrol Kamera -->
+    <div id="kontrol-kamera" class="hidden space-y-2 mb-4">
+      <div class="flex gap-2">
+        <button type="button" onclick="ambilFotoKamera()"
+                class="flex-1 rounded-xl bg-brand-500 py-2 text-sm font-semibold text-white hover:bg-brand-600 transition-colors">
+          📸 Ambil Foto
+        </button>
+        <button type="button" onclick="gantiFacing()"
+                class="rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors" title="Ganti Kamera">
+          🔄
+        </button>
+        <button type="button" onclick="tutupKamera()"
+                class="rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+          Batal
+        </button>
+      </div>
+    </div>
+
+    <!-- Tombol Simpan (muncul setelah ada preview) -->
+    <div id="tombol-simpan" class="hidden">
+      <button type="button" onclick="simpanFoto()"
+              class="w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors">
+        Simpan Foto Profil
+      </button>
+    </div>
+
+    <p id="upload-status" class="mt-2 text-center text-xs text-gray-400"></p>
+  </div>
+</div>
+
+<script>
+  let streamKamera = null;
+  let facingMode = 'user'; // depan default
+  let fotoBlob = null;
+
+  // Pratinjau file yang dipilih dari galeri
+  function pratinjauFile(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      fotoBlob = new Blob([e.target.result], { type: file.type || 'image/jpeg' });
+      const url = URL.createObjectURL(fotoBlob);
+      tampilPreviewModal(url);
+    };
+    reader.onerror = function() {
+      document.getElementById('upload-status').textContent = 'Gagal membaca file. Coba lagi.';
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // Buka kamera
+  async function bukaKamera() {
+    try {
+      streamKamera = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: facingMode }
+      });
+      const video = document.getElementById('kamera-video');
+      video.srcObject = streamKamera;
+      video.classList.remove('hidden');
+      // Mirror preview hanya untuk kamera depan
+      video.style.transform = facingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+      document.getElementById('pilihan-sumber').classList.add('hidden');
+      document.getElementById('kontrol-kamera').classList.remove('hidden');
+      document.getElementById('tombol-simpan').classList.add('hidden');
+    } catch(e) {
+      document.getElementById('upload-status').textContent = 'Tidak bisa mengakses kamera: ' + e.message;
+    }
+  }
+
+  // Ganti kamera depan/belakang
+  async function gantiFacing() {
+    facingMode = facingMode === 'user' ? 'environment' : 'user';
+    tutupKamera();
+    await bukaKamera();
+  }
+
+  // Ambil foto dari kamera
+  function ambilFotoKamera() {
+    const video = document.getElementById('kamera-video');
+    const canvas = document.getElementById('kamera-canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (facingMode === 'user') {
+      // Flip horizontal agar hasil foto tidak terbalik
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+    }
+    ctx.drawImage(video, 0, 0);
+    tutupKamera();
+    canvas.toBlob(function(blob) {
+      fotoBlob = blob;
+      const url = URL.createObjectURL(blob);
+      tampilPreviewModal(url);
+    }, 'image/jpeg', 0.9);
+  }
+
+  // Tutup stream kamera
+  function tutupKamera() {
+    if (streamKamera) {
+      streamKamera.getTracks().forEach(t => t.stop());
+      streamKamera = null;
+    }
+    document.getElementById('kamera-video').classList.add('hidden');
+    document.getElementById('kamera-video').srcObject = null;
+    document.getElementById('kontrol-kamera').classList.add('hidden');
+    document.getElementById('pilihan-sumber').classList.remove('hidden');
+  }
+
+  // Tampil preview di modal
+  function tampilPreviewModal(url) {
+    const img = document.getElementById('modal-img-preview');
+    img.src = url;
+    img.classList.remove('hidden');
+    const def = document.getElementById('modal-default-avatar');
+    if (def) def.classList.add('hidden');
+    document.getElementById('tombol-simpan').classList.remove('hidden');
+    document.getElementById('upload-status').textContent = '';
+  }
+
+  // Upload foto ke server
+  async function simpanFoto() {
+    if (!fotoBlob) return;
+    const status = document.getElementById('upload-status');
+    status.textContent = 'Mengupload...';
+    const fd = new FormData();
+    fd.append('foto', fotoBlob, 'foto-profil.jpg');
+    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    try {
+      const resp = await fetch("{% url 'dashboard:upload_foto_guru' %}", {
+        method: 'POST',
+        body: fd
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        // Update semua avatar di halaman
+        document.querySelectorAll('img[id="avatar-preview"]').forEach(img => {
+          img.src = data.url + '?t=' + Date.now();
+          img.classList.remove('hidden');
+        });
+        // Sembunyikan avatar default
+        document.querySelectorAll('[id="avatar-preview-default"]').forEach(el => el.classList.add('hidden'));
+        // Update avatar di header (base.html)
+        document.querySelectorAll('img[alt="Foto Guru"]').forEach(img => {
+          img.src = data.url + '?t=' + Date.now();
+        });
+        status.textContent = '✓ Foto berhasil disimpan!';
+        status.classList.remove('text-red-500');
+        status.classList.add('text-green-600');
+        setTimeout(() => {
+          document.getElementById('modal-avatar').classList.add('hidden');
+          location.reload();
+        }, 800);
+      } else {
+        status.textContent = 'Gagal upload. Coba lagi.';
+        status.classList.add('text-red-500');
+      }
+    } catch(e) {
+      status.textContent = 'Error: ' + e.message;
+      status.classList.add('text-red-500');
+    }
+  }
+
+  // Tutup modal → stop kamera otomatis
+  document.getElementById('modal-avatar').addEventListener('click', function(e) {
+    if (e.target === this) {
+      tutupKamera();
+      this.classList.add('hidden');
+    }
+  });
+
+  // Tampilkan modal sebagai flex ketika tidak hidden
+  const modalAvatar = document.getElementById('modal-avatar');
+  const observer = new MutationObserver(() => {
+    if (!modalAvatar.classList.contains('hidden')) {
+      modalAvatar.style.display = 'flex';
+    } else {
+      modalAvatar.style.display = '';
+    }
+  });
+  observer.observe(modalAvatar, { attributes: true, attributeFilter: ['class'] });
+</script>
+{% endblock %}

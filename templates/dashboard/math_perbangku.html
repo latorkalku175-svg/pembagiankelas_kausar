@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Math Perbangku · GuruKelas{% endblock %}
+{% block subtitle %}Susun tempat duduk biar saling melengkapi{% endblock %}
+
+{% block content %}
+{% if not kelas %}
+  <div class="card p-10 text-center text-sm text-gray-400">Buat kelas terlebih dahulu untuk melihat denah Math Perbangku.</div>
+{% else %}
+
+<div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+  <div class="flex items-center gap-6 border-b border-gray-100">
+    <a href="{% url 'dashboard:kelas_detail' kelas.id %}" class="pb-3 text-sm font-medium text-gray-400 hover:text-gray-600">Daftar Siswa</a>
+    <a href="{% url 'dashboard:math_perbangku' %}" class="pb-3 text-sm font-semibold text-brand-600 border-b-2 border-brand-600">Per Meja</a>
+  </div>
+
+  <div class="flex items-center gap-3">
+    
+    <form method="post" action="{% url 'dashboard:math_perbangku_atur' %}">
+      {% csrf_token %}
+      <button type="submit" class="flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-50">
+        <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4"><rect x="3.5" y="4.5" width="17" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 9.5h17" stroke="currentColor" stroke-width="1.7"/><path d="M8 4.5v3M16 4.5v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        Atur Meja
+      </button>
+    </form>
+  </div>
+</div>
+
+<section class="card p-6">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-1">
+    <h2 class="text-lg font-bold text-gray-900">Math Perbangku &ndash; {{ kelas.nama }}</h2>
+    {% if rata_rata_kelas %}
+    <span class="text-sm text-gray-500">Rata-rata kelas: <span class="font-semibold text-gray-800">{{ rata_rata_kelas }}</span></span>
+    {% endif %}
+  </div>
+  <p class="mb-5 text-sm text-gray-400">
+    "Atur Meja" memasangkan siswa Cerdas&ndash;Malas, Pintar&ndash;Cerdas, dan Pintar&ndash;Malas
+    di satu meja supaya saling melengkapi &ndash; klik lagi kapan saja untuk mengacak ulang
+    semua posisi duduk.
+  </p>
+
+  <div class="mb-5 flex flex-wrap gap-4 text-xs text-gray-500">
+    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-green-500"></span> Cerdas</span>
+    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-indigo-500"></span> Pintar</span>
+    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-orange-400"></span> Malas</span>
+    <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-gray-300"></span> Belum di-cluster</span>
+  </div>
+
+  {% if meja_list %}
+  <div class="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
+    {% for meja in meja_list %}
+    <div>
+      <p class="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-brand-600">Meja {{ meja.nomor }}</p>
+      <div class="flex items-center justify-center gap-3 rounded-2xl border border-amber-100 bg-amber-50/60 px-4 py-5">
+        {% for s in meja.siswa %}
+        <button type="button"
+                onclick="tampilNamaSiswa('{{ s.nama|escapejs }}', '{{ s.get_cluster_label_display|default:s.cluster_label|escapejs }}')"
+                class="flex flex-col items-center gap-1.5 text-center cursor-pointer group">
+          <div class="flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold text-white transition group-hover:ring-2 group-hover:ring-offset-2 group-hover:ring-brand-400
+            {% if s.cluster_label == 'cerdas' %}bg-green-500
+            {% elif s.cluster_label == 'pintar' %}bg-indigo-500
+            {% elif s.cluster_label == 'malas' %}bg-orange-400
+            {% else %}bg-gray-300{% endif %}">
+            {{ s.nama|slice:":1" }}
+          </div>
+          <span class="text-xs font-medium text-gray-700 group-hover:text-brand-600 transition">{{ s.nama|truncatechars:12 }}</span>
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="py-8 text-center text-sm text-gray-400">Belum ada data siswa di kelas ini.</p>
+  {% endif %}
+</section>
+
+{% endif %}
+
+<!-- =================== MODAL NAMA SISWA =================== -->
+<div id="modal-nama-siswa"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm"
+     onclick="if(event.target===this) this.classList.add('hidden')">
+  <div class="relative mx-4 w-full max-w-xs rounded-2xl bg-white p-6 shadow-2xl text-center">
+    <button onclick="document.getElementById('modal-nama-siswa').classList.add('hidden')"
+            class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1">
+      <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <div id="modal-nama-avatar" class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full text-xl font-bold text-white bg-gray-300"></div>
+    <p id="modal-nama-teks" class="text-base font-bold text-gray-900 break-words"></p>
+    <p id="modal-nama-cluster" class="mt-1 text-xs font-medium text-gray-400"></p>
+  </div>
+</div>
+
+<script>
+  function tampilNamaSiswa(nama, cluster) {
+    document.getElementById('modal-nama-teks').textContent = nama;
+    document.getElementById('modal-nama-cluster').textContent = cluster || '';
+    const avatar = document.getElementById('modal-nama-avatar');
+    avatar.textContent = nama ? nama.charAt(0).toUpperCase() : '?';
+    avatar.className = 'mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full text-xl font-bold text-white ' +
+      (cluster === 'Cerdas' ? 'bg-green-500' :
+       cluster === 'Pintar' ? 'bg-indigo-500' :
+       cluster === 'Malas' ? 'bg-orange-400' : 'bg-gray-300');
+    document.getElementById('modal-nama-siswa').classList.remove('hidden');
+  }
+  const modalNamaSiswa = document.getElementById('modal-nama-siswa');
+  new MutationObserver(() => {
+    modalNamaSiswa.style.display = modalNamaSiswa.classList.contains('hidden') ? '' : 'flex';
+  }).observe(modalNamaSiswa, { attributes: true, attributeFilter: ['class'] });
+</script>
+{% endblock %}

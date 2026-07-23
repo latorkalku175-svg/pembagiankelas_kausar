@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ info.nama }} · GuruKelas{% endblock %}
+{% block subtitle %}Detail siswa kategori {{ info.nama }}{% endblock %}
+
+{% block content %}
+<a href="{% url 'dashboard:cluster_overview' %}" class="text-sm text-gray-400 hover:text-gray-600">&larr; Kembali ke Cluster</a>
+
+<section class="card p-6 mt-4">
+  <div class="flex items-center gap-3 mb-1">
+    <span class="h-3 w-3 rounded-full
+      {% if label == 'cerdas' %}bg-green-500{% elif label == 'pintar' %}bg-indigo-500{% else %}bg-orange-500{% endif %}"></span>
+    <h2 class="text-lg font-bold text-gray-900">{{ info.nama }} &middot; {{ judul_kelas }}</h2>
+  </div>
+  <p class="mb-5 text-sm text-gray-400">{{ info.deskripsi }}</p>
+
+  {% if siswa_list %}
+  <div class="overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-gray-400 border-b border-gray-100">
+        <th class="pb-2 font-medium">Nama</th>
+        {% if tampilkan_kolom_kelas %}<th class="pb-2 font-medium">Kelas</th>{% endif %}
+        <th class="pb-2 font-medium">Matematika</th>
+        <th class="pb-2 font-medium">Bahasa</th>
+        <th class="pb-2 font-medium">Kehadiran</th>
+        <th class="pb-2 font-medium">Keaktifan</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-50">
+      {% for s in siswa_list %}
+      <tr>
+        <td class="py-2.5 font-medium text-gray-800">{{ s.nama }}</td>
+        {% if tampilkan_kolom_kelas %}<td class="py-2.5 text-gray-500">{{ s.kelas.nama }}</td>{% endif %}
+        <td class="py-2.5 text-gray-500">{{ s.nilai_matematika|floatformat:0 }}</td>
+        <td class="py-2.5 text-gray-500">{{ s.nilai_bahasa|floatformat:0 }}</td>
+        <td class="py-2.5 text-gray-500">{{ s.kehadiran_persen|floatformat:0 }}%</td>
+        <td class="py-2.5 text-gray-500">{{ s.keaktifan|floatformat:0 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="py-8 text-center text-sm text-gray-400">Belum ada siswa pada kategori ini.</p>
+  {% endif %}
+</section>
+{% endblock %}

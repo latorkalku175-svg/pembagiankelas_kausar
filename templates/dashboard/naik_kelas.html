@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Naik Kelas · GuruKelas{% endblock %}
+{% block subtitle %}Gabungkan & sebar rata hasil cluster ke kelas tingkat berikutnya{% endblock %}
+
+{% block content %}
+
+<section class="card p-6 mb-6">
+  <h2 class="text-lg font-bold text-gray-900 mb-1">Naik Kelas</h2>
+  <p class="text-sm text-gray-400">
+    Gabungkan seluruh siswa yang sudah di-cluster dari satu tingkat (mis. <strong>Kelas 1A + Kelas 1B</strong>),
+    lalu sebar rata ke kelas-kelas baru di tingkat berikutnya (mis. <strong>Kelas 2A &amp; Kelas 2B</strong>)
+    supaya tiap kelas baru dapat campuran Cerdas/Pintar/Malas yang seimbang. Jumlah kelas baru otomatis
+    mengikuti jumlah kelas asal. Siswa akan <strong>dipindah</strong> ke kelas baru &mdash; riwayat nilai
+    &amp; hasil cluster tiap siswa tetap tersimpan (ikut pindah), sementara <strong>kelas tingkat lama akan
+    otomatis terhapus</strong> begitu seluruh siswanya selesai dipindahkan.
+  </p>
+</section>
+
+{% if not kelompok_tingkat %}
+<div class="card p-10 text-center text-sm text-gray-400">
+  Belum ada kelas yang namanya mengandung angka tingkat (mis. "Kelas 1A"). Buat atau upload data kelas terlebih dahulu.
+</div>
+{% else %}
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+  {% for grup in kelompok_tingkat %}
+  <section class="card p-6">
+    <div class="flex items-center justify-between mb-1">
+      <h3 class="text-base font-bold text-gray-900">Tingkat {{ grup.tingkat }}</h3>
+      <span class="text-sm text-gray-400">{{ grup.total_siswa }} siswa</span>
+    </div>
+    <p class="mb-4 text-sm text-gray-400">
+      Akan dibagi rata menjadi <strong>{{ grup.kelas_info|length }}</strong> kelas baru di Tingkat {{ grup.tingkat_baru }}.
+    </p>
+
+    <div class="divide-y divide-gray-100 mb-4">
+      {% for ki in grup.kelas_info %}
+      <div class="flex items-center justify-between py-2.5 text-sm">
+        <span class="font-medium text-gray-700">{{ ki.kelas.nama }}</span>
+        <span class="text-gray-400">
+          {{ ki.jumlah }} siswa
+          {% if ki.belum_cluster %}
+            <span class="text-amber-600">&middot; {{ ki.belum_cluster }} belum cluster</span>
+          {% endif %}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if grup.total_belum_cluster %}
+    <p class="mb-3 text-xs text-amber-600">
+      {{ grup.total_belum_cluster }} siswa di tingkat ini belum di-cluster. Mereka tetap akan ikut naik &amp;
+      disebar rata, hanya saja tanpa mempertimbangkan kategori cluster-nya. Sebaiknya jalankan K-Means dulu
+      di halaman Cluster supaya pembagiannya lebih seimbang.
+    </p>
+    {% endif %}
+
+    <button type="button"
+            {% if not grup.bisa_diproses %}disabled{% endif %}
+            onclick="bukaModalNaikKelas({{ grup.tingkat }}, {{ grup.tingkat_baru }}, {{ grup.total_siswa }})"
+            class="w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+      Naikkan ke Tingkat {{ grup.tingkat_baru }} &rarr;
+    </button>
+  </section>
+  {% endfor %}
+</div>
+
+{% endif %}
+
+<!-- Modal Naik Kelas -->
+<div id="modal-naik-kelas" style="display:none"
+     class="fixed inset-0 z-50 items-center justify-center bg-black/40 backdrop-blur-sm">
+  <div class="relative mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 mx-auto mb-4">
+      <svg viewBox="0 0 24 24" fill="none" class="h-6 w-6 text-brand-500">
+        <path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h3 class="text-center text-base font-bold text-gray-900 mb-1">Naikkan Kelas?</h3>
+    <p class="text-center text-sm text-gray-500 mb-1">
+      <strong id="modal-naik-jumlah" class="text-gray-800"></strong> siswa dari
+      <strong id="modal-naik-dari" class="text-gray-800"></strong> akan dipindah ke
+      <strong id="modal-naik-ke" class="text-gray-800"></strong>.
+    </p>
+    <p class="text-center text-xs text-red-500 mb-5">Kelas lama akan otomatis dihapus setelah proses selesai.</p>
+    <div class="flex gap-3">
+      <button type="button" onclick="tutupModalNaikKelas()"
+              class="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+        Batal
+      </button>
+      <form id="form-naik-kelas" method="post" action="{% url 'dashboard:naik_kelas_proses' %}" class="flex-1">
+        {% csrf_token %}
+        <input type="hidden" id="input-tingkat-asal" name="tingkat_asal" value="">
+        <button type="submit"
+                class="w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors">
+          Ya, Naikkan
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function bukaModalNaikKelas(tingkat, tingkatBaru, jumlah) {
+  document.getElementById('modal-naik-jumlah').textContent = jumlah;
+  document.getElementById('modal-naik-dari').textContent = 'Tingkat ' + tingkat;
+  document.getElementById('modal-naik-ke').textContent = 'Tingkat ' + tingkatBaru;
+  document.getElementById('input-tingkat-asal').value = tingkat;
+  document.getElementById('modal-naik-kelas').style.display = 'flex';
+}
+function tutupModalNaikKelas() {
+  document.getElementById('modal-naik-kelas').style.display = 'none';
+}
+document.getElementById('modal-naik-kelas').addEventListener('mousedown', function(e) {
+  if (e.target === this) tutupModalNaikKelas();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') tutupModalNaikKelas();
+});
+</script>
+{% endblock %}

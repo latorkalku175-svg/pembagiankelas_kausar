@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}{{ kelas_obj.nama }} · GuruKelas{% endblock %}
+{% block subtitle %}Daftar siswa di {{ kelas_obj.nama }}{% endblock %}
+
+{% block content %}
+
+<!-- Script dan modal DULU sebelum konten, agar fungsi sudah terdefinisi saat onclick dipanggil -->
+<div id="modal-hapus-siswa" style="display:none"
+     class="fixed inset-0 z-50 items-center justify-center bg-black/40 backdrop-blur-sm">
+  <div class="relative mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+    <div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 mx-auto mb-4">
+      <svg viewBox="0 0 24 24" fill="none" class="h-6 w-6 text-red-500">
+        <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h3 class="text-center text-base font-bold text-gray-900 mb-1">Hapus Siswa?</h3>
+    <p class="text-center text-sm text-gray-500 mb-5">
+      Data <strong id="modal-siswa-nama" class="text-gray-800"></strong> akan dihapus permanen.
+    </p>
+    <div class="flex gap-3">
+      <button type="button" onclick="tutupModalHapusSiswa()"
+              class="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+        Batal
+      </button>
+      <form id="form-hapus-siswa" method="post" action="" class="flex-1">
+        {% csrf_token %}
+        <button type="submit"
+                class="w-full rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white hover:bg-red-600 transition-colors">
+          Ya, Hapus
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function bukaModalHapusSiswa(url, nama) {
+  document.getElementById('modal-siswa-nama').textContent = nama;
+  document.getElementById('form-hapus-siswa').action = url;
+  document.getElementById('modal-hapus-siswa').style.display = 'flex';
+}
+function tutupModalHapusSiswa() {
+  document.getElementById('modal-hapus-siswa').style.display = 'none';
+}
+document.getElementById('modal-hapus-siswa').addEventListener('mousedown', function(e) {
+  if (e.target === this) tutupModalHapusSiswa();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') tutupModalHapusSiswa();
+});
+</script>
+
+<!-- Konten utama -->
+<div class="mb-5 flex items-center justify-between">
+  <div>
+    <a href="{% url 'dashboard:kelas_list' %}" class="text-sm text-gray-400 hover:text-gray-600">&larr; Kembali ke daftar kelas</a>
+    <h2 class="text-xl font-bold text-gray-900 mt-1">{{ kelas_obj.nama }}</h2>
+  </div>
+  <form method="post" action="{% url 'dashboard:cluster_jalankan' %}">
+    {% csrf_token %}
+    <button type="submit" class="rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-100">
+      Jalankan Clustering K-Means
+    </button>
+  </form>
+</div>
+
+<section class="card p-6 overflow-x-auto">
+  <h3 class="text-base font-bold text-gray-900 mb-4">Daftar Siswa ({{ siswa_list.count }})</h3>
+
+  {% if siswa_list %}
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-left text-gray-400 border-b border-gray-100">
+        <th class="pb-2 pr-4 font-medium whitespace-nowrap">Nama Siswa</th>
+        <th class="pb-2 pr-4 font-medium whitespace-nowrap">NIS</th>
+        <th class="pb-2 pr-4 font-medium whitespace-nowrap">Eksakta</th>
+        <th class="pb-2 pr-4 font-medium whitespace-nowrap">Non-Eksakta</th>
+        <th class="pb-2 pr-4 font-medium whitespace-nowrap">Izin</th>
+        <th class="pb-2 pr-4 font-medium whitespace-nowrap">Sakit</th>
+        <th class="pb-2 pr-4 font-medium whitespace-nowrap">Alpa</th>
+        <th class="pb-2 pr-4 font-medium whitespace-nowrap">Rangking</th>
+        <th class="pb-2 pr-4 font-medium whitespace-nowrap">Cluster Raw</th>
+        <th class="pb-2 pr-4 font-medium whitespace-nowrap">Kategori</th>
+        <th class="pb-2 font-medium"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-50">
+      {% for s in siswa_list %}
+      <tr>
+        <td class="py-2.5 pr-4 font-medium text-gray-800 whitespace-nowrap">{{ s.nama }}</td>
+        <td class="py-2.5 pr-4 text-gray-500">{{ s.nis|default:"—" }}</td>
+        <td class="py-2.5 pr-4 text-gray-500">{{ s.eksakta|floatformat:1|default:"—" }}</td>
+        <td class="py-2.5 pr-4 text-gray-500">{{ s.nonekstakta|floatformat:1|default:"—" }}</td>
+        <td class="py-2.5 pr-4 text-gray-500">{{ s.izin|floatformat:0 }}</td>
+        <td class="py-2.5 pr-4 text-gray-500">{{ s.sakit|floatformat:0 }}</td>
+        <td class="py-2.5 pr-4 text-gray-500">{{ s.alpa|floatformat:0 }}</td>
+        <td class="py-2.5 pr-4 text-gray-500">{{ s.rangking|floatformat:0|default:"—" }}</td>
+        <td class="py-2.5 pr-4 text-gray-500">{{ s.cluster_raw|default_if_none:"—" }}</td>
+        <td class="py-2.5 pr-4">
+          {% if s.cluster_label == "cerdas" %}
+            <span class="rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-600">Cerdas</span>
+          {% elif s.cluster_label == "pintar" %}
+            <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-600">Pintar</span>
+          {% elif s.cluster_label == "malas" %}
+            <span class="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-600">Malas</span>
+          {% else %}
+            <span class="rounded-full bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-400">Belum</span>
+          {% endif %}
+        </td>
+        <td class="py-2.5 text-right whitespace-nowrap">
+          <a href="{% url 'dashboard:siswa_edit' kelas_obj.id s.id %}" class="text-xs font-medium text-brand-600 hover:underline">Edit</a>
+          <button type="button"
+                  onclick="bukaModalHapusSiswa('{% url 'dashboard:siswa_hapus' kelas_obj.id s.id %}', '{{ s.nama|escapejs }}')"
+                  class="ml-3 text-xs font-medium text-red-400 hover:text-red-600 transition-colors">
+            Hapus
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="py-8 text-center text-sm text-gray-400">
+    Belum ada siswa di kelas ini. Upload file Excel leger di halaman
+    <a href="{% url 'dashboard:upload_file' %}" class="text-brand-600 hover:underline">Upload</a>
+    untuk mengisi kelas ini.
+  </p>
+  {% endif %}
+</section>
+
+{% endblock %}

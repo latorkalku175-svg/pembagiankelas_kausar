@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+{% block title %}Riwayat Laporan · GuruKelas{% endblock %}
+{% block subtitle %}Riwayat aktivitas guru & upload data{% endblock %}
+
+{% block content %}
+
+<!-- ===================== TOMBOL UNDUH PDF ===================== -->
+<div class="mb-6 flex items-center justify-between gap-4 flex-wrap">
+  <div>
+    <h1 class="text-xl font-bold text-gray-900">Riwayat Laporan</h1>
+    <p class="text-sm text-gray-400">Riwayat aktivitas guru &amp; upload data.</p>
+  </div>
+</div>
+
+{% if request.user.is_superuser %}
+<!-- ===================== RINGKASAN (SUPERUSER) ===================== -->
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-6">
+  <div class="card p-5">
+    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Total Guru</p>
+    <p class="text-2xl font-extrabold text-gray-900">{{ total_guru }}</p>
+  </div>
+  <div class="card p-5">
+    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Total Upload Excel</p>
+    <p class="text-2xl font-extrabold text-gray-900">{{ total_upload_excel }}</p>
+  </div>
+  <div class="card p-5">
+    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Login Terakhir Anda</p>
+    <p class="text-lg font-bold text-gray-900">{{ terakhir_login_saya|date:"d M Y, H:i"|default:"–" }}</p>
+  </div>
+</div>
+
+<!-- ===================== TABEL AKTIVITAS PER GURU ===================== -->
+<section class="card p-6 mb-6">
+  <h2 class="text-lg font-bold text-gray-900 mb-1">Riwayat Guru</h2>
+  <p class="mb-4 text-sm text-gray-400">Berapa kali tiap guru upload Excel, kapan terakhir login, dan sejak kapan bergabung.</p>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-100 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+          <th class="py-2 pr-4">Guru</th>
+          <th class="py-2 pr-4">Jumlah Kelas</th>
+          <th class="py-2 pr-4">Jumlah Siswa</th>
+          <th class="py-2 pr-4">Upload Excel</th>
+          <th class="py-2 pr-4">Terakhir Login</th>
+          <th class="py-2">Bergabung Sejak</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in guru_stats %}
+        <tr class="border-b border-gray-50">
+          <td class="py-2 pr-4 text-gray-700 font-medium">{{ g.user.first_name|default:g.user.username }}</td>
+          <td class="py-2 pr-4 text-gray-700">{{ g.jumlah_kelas }}</td>
+          <td class="py-2 pr-4 text-gray-700">{{ g.jumlah_siswa }}</td>
+          <td class="py-2 pr-4 text-gray-700">{{ g.jumlah_upload }}</td>
+          <td class="py-2 pr-4 text-gray-400">{{ g.terakhir_login|date:"d M Y, H:i"|default:"Belum pernah" }}</td>
+          <td class="py-2 text-gray-400">{{ g.bergabung_sejak|date:"d M Y" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="py-6 text-center text-gray-400">Belum ada guru terdaftar.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% else %}
+<!-- ===================== RINGKASAN (GURU) ===================== -->
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-6">
+  <div class="card p-5">
+    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Upload Excel Anda</p>
+    <p class="text-2xl font-extrabold text-gray-900">{{ total_upload_excel|default:0 }}</p>
+  </div>
+  <div class="card p-5">
+    <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Login Terakhir</p>
+    <p class="text-lg font-bold text-gray-900">{{ terakhir_login_saya|date:"d M Y, H:i"|default:"–" }}</p>
+  </div>
+</div>
+{% endif %}
+
+<!-- ===================== RIWAYAT PERBANGKU ===================== -->
+<section class="card p-6 mb-6">
+  <h2 class="text-lg font-bold text-gray-900 mb-1">Riwayat Perbangku</h2>
+  <p class="mb-4 text-sm text-gray-400">
+    Catatan setiap kali posisi meja (Math Perbangku) diatur/diacak ulang
+    {% if request.user.is_superuser %}untuk seluruh kelas &amp; guru.{% else %}untuk kelas-kelas yang Anda ampu.{% endif %}
+  </p>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-100 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+          <th class="py-2 pr-4">Kelas</th>
+          <th class="py-2 pr-4">Diatur Oleh</th>
+          <th class="py-2 pr-4">Jumlah Meja</th>
+          <th class="py-2 pr-4">Jumlah Siswa</th>
+          <th class="py-2 pr-4">Waktu</th>
+          <th class="py-2">Unduh</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in riwayat_perbangku %}
+        <tr class="border-b border-gray-50">
+          <td class="py-2 pr-4 text-gray-700">{{ r.kelas.nama }}</td>
+          <td class="py-2 pr-4 text-gray-700">
+            {{ r.diatur_oleh.first_name|default:r.diatur_oleh.username|default:"–" }}
+            {% if r.diatur_oleh.is_superuser %}<span class="ml-1 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-600">Superuser</span>{% endif %}
+          </td>
+          <td class="py-2 pr-4 text-gray-700">{{ r.jumlah_meja }}</td>
+          <td class="py-2 pr-4 text-gray-700">{{ r.jumlah_siswa }}</td>
+          <td class="py-2 pr-4 text-gray-400">{{ r.diatur_pada|date:"d M Y, H:i" }}</td>
+          <td class="py-2">
+            <div class="flex items-center gap-2">
+              <button type="button"
+                      onclick="bukaPreviewRiwayat('{% url 'dashboard:riwayat_preview_perbangku' r.id %}')"
+                      class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition">
+                <svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5">
+                  <path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                Preview
+              </button>
+              <a href="{% url 'dashboard:riwayat_unduh_perbangku' r.id %}"
+                 class="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-600 hover:bg-brand-100 transition">
+                <svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5">
+                  <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Unduh
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="py-6 text-center text-gray-400">Belum ada riwayat pengaturan meja.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== RIWAYAT CLUSTER K-MEANS ===================== -->
+<section class="card p-6 mb-6">
+  <div class="mb-1 flex items-center justify-between gap-4 flex-wrap">
+    <h2 class="text-lg font-bold text-gray-900">Riwayat Cluster K-Means</h2>
+    <a href="{% url 'dashboard:cluster_pdf_preview' %}" target="_blank" rel="noopener"
+       class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition">
+      <svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5">
+        <path d="M2.05 12a9.94 9.94 0 0119.9 0 9.94 9.94 0 01-19.9 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+      </svg>
+      Preview Cluster Saat Ini
+    </a>
+  </div>
+  <p class="mb-4 text-sm text-gray-400">
+    Catatan setiap kali K-Means dijalankan (manual atau otomatis saat upload Excel)
+    {% if request.user.is_superuser %}untuk seluruh kelas &amp; guru.{% else %}untuk kelas-kelas yang Anda ampu.{% endif %}
+  </p>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-100 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+          <th class="py-2 pr-4">Kelas / Tingkat</th>
+          <th class="py-2 pr-4">Dijalankan Oleh</th>
+          <th class="py-2 pr-4">Sumber</th>
+          <th class="py-2 pr-4">Cerdas</th>
+          <th class="py-2 pr-4">Pintar</th>
+          <th class="py-2 pr-4">Malas</th>
+          <th class="py-2 pr-4">Waktu</th>
+          <th class="py-2">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in riwayat_cluster %}
+        <tr class="border-b border-gray-50">
+          <td class="py-2 pr-4 text-gray-700">{{ r.judul_kelas|default:r.kelas.nama }}</td>
+          <td class="py-2 pr-4 text-gray-700">
+            {{ r.dijalankan_oleh.first_name|default:r.dijalankan_oleh.username|default:"–" }}
+            {% if r.dijalankan_oleh.is_superuser %}<span class="ml-1 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-600">Superuser</span>{% endif %}
+          </td>
+          <td class="py-2 pr-4">
+            {% if r.sumber == "upload_excel" %}
+            <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-600">Upload Excel</span>
+            {% else %}
+            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">Manual</span>
+            {% endif %}
+          </td>
+          <td class="py-2 pr-4 text-green-700 font-semibold">{{ r.jumlah_cerdas }}</td>
+          <td class="py-2 pr-4 text-indigo-700 font-semibold">{{ r.jumlah_pintar }}</td>
+          <td class="py-2 pr-4 text-orange-700 font-semibold">{{ r.jumlah_malas }}</td>
+          <td class="py-2 pr-4 text-gray-400">{{ r.dijalankan_pada|date:"d M Y, H:i" }}</td>
+          <td class="py-2">
+            <div class="flex items-center gap-2">
+              <button type="button"
+                      onclick="bukaPreviewRiwayat('{% url 'dashboard:riwayat_preview_cluster' r.id %}')"
+                      class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition">
+                <svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5">
+                  <path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                Preview
+              </button>
+              <a href="{% url 'dashboard:riwayat_unduh_cluster' r.id %}"
+                 class="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-600 hover:bg-brand-100 transition">
+                <svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5">
+                  <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Unduh
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="py-6 text-center text-gray-400">Belum ada riwayat clustering K-Means.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== RIWAYAT UPLOAD EXCEL: OLAH DATA ===================== -->
+<section class="card p-6 mb-6">
+  <h2 class="text-lg font-bold text-gray-900 mb-1">Riwayat Upload Excel — Olah Data</h2>
+  <p class="mb-4 text-sm text-gray-400">
+    Data siswa hasil olahan (No, Nama, Nilai Eksakta &amp; Non-Eksakta, Izin, Sakit, Alpa)
+    dari tiap upload
+    {% if request.user.is_superuser %}seluruh kelas &amp; guru.{% else %}kelas-kelas yang Anda ampu.{% endif %}
+  </p>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-100 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+          <th class="py-2 pr-4">File</th>
+          <th class="py-2 pr-4">Kelas</th>
+          <th class="py-2 pr-4">Diupload Oleh</th>
+          <th class="py-2 pr-4">Jumlah Siswa</th>
+          <th class="py-2 pr-4">Waktu</th>
+          <th class="py-2">Unduh</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in riwayat_upload %}
+        <tr class="border-b border-gray-50">
+          <td class="py-2 pr-4 text-gray-700">{{ r.nama_file }}</td>
+          <td class="py-2 pr-4 text-gray-700">{{ r.kelas.nama }}</td>
+          <td class="py-2 pr-4 text-gray-700">
+            {{ r.diupload_oleh.first_name|default:r.diupload_oleh.username|default:"–" }}
+            {% if r.diupload_oleh.is_superuser %}<span class="ml-1 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-600">Superuser</span>{% endif %}
+          </td>
+          <td class="py-2 pr-4 text-gray-700">{{ r.jumlah_siswa }}</td>
+          <td class="py-2 pr-4 text-gray-400">{{ r.diupload_pada|date:"d M Y, H:i" }}</td>
+          <td class="py-2">
+            <div class="flex items-center gap-2">
+              <button type="button"
+                      onclick="bukaPreviewRiwayat('{% url 'dashboard:riwayat_preview_olahan' r.id %}')"
+                      class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition">
+                <svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5">
+                  <path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                Preview
+              </button>
+              <a href="{% url 'dashboard:riwayat_unduh_olahan' r.id %}"
+                 class="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-600 hover:bg-brand-100 transition">
+                <svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5">
+                  <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Unduh
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="py-6 text-center text-gray-400">Belum ada riwayat upload Excel.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===================== RIWAYAT UPLOAD EXCEL: DATA ASLI ===================== -->
+<section class="card p-6">
+  <h2 class="text-lg font-bold text-gray-900 mb-1">Riwayat Upload Excel — Data Asli</h2>
+  <p class="mb-4 text-sm text-gray-400">
+    File Excel asli persis seperti yang diupload, sebelum diolah/dianalisis.
+  </p>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-gray-100 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+          <th class="py-2 pr-4">File</th>
+          <th class="py-2 pr-4">Kelas</th>
+          <th class="py-2 pr-4">Diupload Oleh</th>
+          <th class="py-2 pr-4">Jumlah Siswa</th>
+          <th class="py-2 pr-4">Waktu</th>
+          <th class="py-2">Unduh</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in riwayat_upload %}
+        <tr class="border-b border-gray-50">
+          <td class="py-2 pr-4 text-gray-700">{{ r.nama_file }}</td>
+          <td class="py-2 pr-4 text-gray-700">{{ r.kelas.nama }}</td>
+          <td class="py-2 pr-4 text-gray-700">
+            {{ r.diupload_oleh.first_name|default:r.diupload_oleh.username|default:"–" }}
+            {% if r.diupload_oleh.is_superuser %}<span class="ml-1 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-600">Superuser</span>{% endif %}
+          </td>
+          <td class="py-2 pr-4 text-gray-700">{{ r.jumlah_siswa }}</td>
+          <td class="py-2 pr-4 text-gray-400">{{ r.diupload_pada|date:"d M Y, H:i" }}</td>
+          <td class="py-2">
+            <div class="flex items-center gap-2">
+              <button type="button"
+                      onclick="bukaPreviewRiwayat('{% url 'dashboard:riwayat_preview_asli' r.id %}')"
+                      class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition">
+                <svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5">
+                  <path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                Preview
+              </button>
+              <a href="{% url 'dashboard:riwayat_unduh_asli' r.id %}"
+                 class="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-600 hover:bg-brand-100 transition">
+                <svg viewBox="0 0 24 24" fill="none" class="h-3.5 w-3.5">
+                  <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Unduh
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="py-6 text-center text-gray-400">Belum ada riwayat upload Excel.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- =================== MODAL PREVIEW RIWAYAT UPLOAD =================== -->
+<div id="modal-preview-riwayat"
+     style="display:none"
+     class="fixed inset-0 z-50 items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+     aria-modal="true" role="dialog">
+  <div class="relative w-full max-w-4xl max-h-[85vh] flex flex-col rounded-2xl bg-white shadow-2xl">
+
+    <div class="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-4">
+      <div>
+        <h3 id="preview-judul" class="text-lg font-bold text-gray-900">Preview</h3>
+        <p id="preview-catatan" class="mt-0.5 text-xs text-gray-400"></p>
+      </div>
+      <button type="button" onclick="tutupPreviewRiwayat()"
+              class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition">
+        <svg viewBox="0 0 24 24" fill="none" class="h-5 w-5">
+          <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div id="preview-body" class="overflow-auto px-6 py-4 flex-1">
+      <p class="text-center text-sm text-gray-400 py-10">Memuat data…</p>
+    </div>
+
+    <div class="flex items-center justify-between gap-3 border-t border-gray-100 px-6 py-4">
+      <p id="preview-ket-jumlah" class="text-xs text-gray-400"></p>
+      <div class="flex items-center gap-3">
+        <button type="button" onclick="tutupPreviewRiwayat()"
+                class="rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
+          Tutup
+        </button>
+        <a id="preview-link-unduh" href="#"
+           class="inline-flex items-center gap-1.5 rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 transition">
+          <svg viewBox="0 0 24 24" fill="none" class="h-4 w-4">
+            <path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Unduh
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function bukaPreviewRiwayat(url) {
+  const modal = document.getElementById('modal-preview-riwayat');
+  const body = document.getElementById('preview-body');
+  const judul = document.getElementById('preview-judul');
+  const catatan = document.getElementById('preview-catatan');
+  const ketJumlah = document.getElementById('preview-ket-jumlah');
+  const linkUnduh = document.getElementById('preview-link-unduh');
+
+  judul.textContent = 'Preview';
+  catatan.textContent = '';
+  ketJumlah.textContent = '';
+  linkUnduh.href = '#';
+  body.innerHTML = '<p class="text-center text-sm text-gray-400 py-10">Memuat data…</p>';
+  modal.style.display = 'flex';
+
+  fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(res => res.json())
+    .then(data => {
+      if (!data.ok) {
+        body.innerHTML = '<p class="text-center text-sm text-red-500 py-10">' +
+          (data.error || 'Gagal memuat preview.') + '</p>';
+        return;
+      }
+
+      judul.textContent = data.judul || 'Preview';
+      catatan.textContent = data.catatan || '';
+      linkUnduh.href = data.url_unduh || '#';
+
+      if (data.total_baris > data.ditampilkan) {
+        ketJumlah.textContent = 'Menampilkan ' + data.ditampilkan + ' dari ' + data.total_baris + ' baris.';
+      } else {
+        ketJumlah.textContent = data.total_baris + ' baris data.';
+      }
+
+      if (!data.baris || data.baris.length === 0) {
+        body.innerHTML = '<p class="text-center text-sm text-gray-400 py-10">Belum ada data untuk ditampilkan.</p>';
+        return;
+      }
+
+      const esc = (v) => {
+        const s = (v === null || v === undefined) ? '' : String(v);
+        return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      };
+
+      let html = '<table class="w-full text-xs border-collapse"><thead>';
+      if (data.header_grup) {
+        // Header 2 baris: baris atas (mis. "Nilai" colspan 2 membawahi
+        // Eksakta & Non-Eksakta), baris bawah hanya kolom yang punya sub-header.
+        html += '<tr class="bg-gray-50 text-center font-semibold uppercase tracking-wide text-gray-400">';
+        data.header_grup.forEach(h => {
+          const colspan = h.colspan || 1;
+          const rowspan = h.rowspan || 1;
+          html += '<th class="border border-gray-100 px-2 py-1.5"' +
+            (colspan > 1 ? ' colspan="' + colspan + '"' : '') +
+            (rowspan > 1 ? ' rowspan="' + rowspan + '"' : '') + '>' + esc(h.label) + '</th>';
+        });
+        html += '</tr>';
+        if (data.header_sub && data.header_sub.length) {
+          html += '<tr class="bg-gray-50 text-center font-semibold uppercase tracking-wide text-gray-400">';
+          data.header_sub.forEach(s => { html += '<th class="border border-gray-100 px-2 py-1.5">' + esc(s) + '</th>'; });
+          html += '</tr>';
+        }
+      } else if (data.kolom) {
+        html += '<tr class="bg-gray-50 text-left font-semibold uppercase tracking-wide text-gray-400">';
+        data.kolom.forEach(k => { html += '<th class="border border-gray-100 px-2 py-1.5">' + esc(k) + '</th>'; });
+        html += '</tr>';
+      } else {
+        const lebar = data.baris[0] ? data.baris[0].length : 0;
+        html += '<tr class="bg-gray-50 text-left font-semibold uppercase tracking-wide text-gray-400">';
+        for (let i = 0; i < lebar; i++) { html += '<th class="border border-gray-100 px-2 py-1.5">' + (i + 1) + '</th>'; }
+        html += '</tr>';
+      }
+      html += '</thead><tbody>';
+      data.baris.forEach(baris => {
+        html += '<tr class="odd:bg-white even:bg-gray-50/50">';
+        baris.forEach(nilai => { html += '<td class="border border-gray-100 px-2 py-1.5 text-gray-700 whitespace-nowrap">' + esc(nilai) + '</td>'; });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      body.innerHTML = html;
+    })
+    .catch(() => {
+      body.innerHTML = '<p class="text-center text-sm text-red-500 py-10">Gagal memuat preview. Coba lagi.</p>';
+    });
+}
+
+function tutupPreviewRiwayat() {
+  document.getElementById('modal-preview-riwayat').style.display = 'none';
+}
+
+document.getElementById('modal-preview-riwayat').addEventListener('mousedown', function(e) {
+  if (e.target === this) tutupPreviewRiwayat();
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') tutupPreviewRiwayat();
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ siswa.nama }} · GuruKelas{% endblock %}
+{% block subtitle %}Perbarui data siswa{% endblock %}
+
+{% block content %}
+<a href="{% url 'dashboard:kelas_detail' kelas_obj.id %}" class="text-sm text-gray-400 hover:text-gray-600">&larr; Kembali ke {{ kelas_obj.nama }}</a>
+
+<section class="card p-6 mt-4 max-w-lg">
+  <h2 class="text-lg font-bold text-gray-900 mb-4">Edit Data: {{ siswa.nama }}</h2>
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    {% for field in form %}
+    <div>
+      <label class="mb-1.5 block text-sm font-medium text-gray-600">{{ field.label }}</label>
+      {{ field }}
+      {% if field.errors %}<p class="mt-1 text-xs text-red-500">{{ field.errors.0 }}</p>{% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors">
+      Simpan Perubahan
+    </button>
+  </form>
+</section>
+{% endblock %}
